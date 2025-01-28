@@ -1,3 +1,5 @@
+# Description: This program reads a matrix and two points (entry and exit) from the user and prints them back.
+
 def read_path():
     rows = int(input("Enter the number of rows: "))
     cols = int(input("Enter the number of columns: "))
