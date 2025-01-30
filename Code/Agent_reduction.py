@@ -45,7 +45,6 @@ def read_path():
 def print_matrix(matrixA):
     for row in matrixA:
         print(" ".join(map(str, row)))
-
 def search_path(matrixA, currentPoint, pathflag, last_agent_point):
     print(f"Searching from {currentPoint} in direction {pathflag}")
     rows = len(matrixA)
@@ -63,7 +62,7 @@ def search_path(matrixA, currentPoint, pathflag, last_agent_point):
             elif matrixA[r][c] == 2:
                 # Check if the previous 2 is in the same section
                 if last_agent_point and (r, c) in last_agent_point:
-                    print("zigzag detecter at : ", (r, c))
+                    print(f"Crossing previous section at: ({r}, {c})")
                     add_agent = 0
                 else:
                     add_agent = 1
@@ -75,6 +74,7 @@ def search_path(matrixA, currentPoint, pathflag, last_agent_point):
                 step = 1 if col > col0 else -1
                 path_cells = [(row0, c) for c in range(col0, col + step, step)]
                 walk_cells(path_cells)
+                print(f"Current section: row {row0}, columns {col0} to {col}")
                 return nextPoint, 'c', add_agent
         return None, 'r', add_agent
 
@@ -85,6 +85,7 @@ def search_path(matrixA, currentPoint, pathflag, last_agent_point):
                 step = 1 if row > row0 else -1
                 path_cells = [(r, col0) for r in range(row0, row + step, step)]
                 walk_cells(path_cells)
+                print(f"Current section: column {col0}, rows {row0} to {row}")
                 return nextPoint, 'r', add_agent
         return None, 'c', add_agent
 
@@ -95,6 +96,7 @@ def search_path(matrixA, currentPoint, pathflag, last_agent_point):
                 step = 1 if col > col0 else -1
                 path_cells = [(row0, c) for c in range(col0, col + step, step)]
                 walk_cells(path_cells)
+                print(f"Current section: row {row0}, columns {col0} to {col}")
                 return nextPoint, 'c', add_agent
 
         for row in range(rows):
@@ -103,6 +105,7 @@ def search_path(matrixA, currentPoint, pathflag, last_agent_point):
                 step = 1 if row > row0 else -1
                 path_cells = [(r, col0) for r in range(row0, row + step, step)]
                 walk_cells(path_cells)
+                print(f"Current section: column {col0}, rows {row0} to {row}")
                 return nextPoint, 'r', add_agent
 
         return None, 'i', add_agent

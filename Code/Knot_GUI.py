@@ -3,6 +3,7 @@ from tkinter import messagebox
 import Agent_reduction
 from pathNode import Node
 
+
 class AgentReductionGUI:
     def __init__(self, root):
         self.root = root
@@ -41,8 +42,20 @@ class AgentReductionGUI:
         self.canvas.pack(pady=10)
 
         # Output Labels
-        self.path_label = tk.Label(root, text="Path: ")
-        self.path_label.pack()
+        self.path_title_label = tk.Label(root, text="Path from Entry to Exit:")
+        self.path_title_label.pack()
+
+        self.path_frame = tk.Frame(root)
+        self.path_frame.pack(pady=5, fill=tk.BOTH, expand=True)
+
+        self.path_scrollbar = tk.Scrollbar(self.path_frame)
+        self.path_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self.path_text = tk.Text(self.path_frame, height=8, width=50, yscrollcommand=self.path_scrollbar.set)
+        self.path_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        self.path_scrollbar.config(command=self.path_text.yview)
+
         self.original_points_label = tk.Label(root, text="Total number of original points: ")
         self.original_points_label.pack()
         self.agents_needed_label = tk.Label(root, text="Total number of agents needed after reduction: ")
@@ -91,13 +104,17 @@ class AgentReductionGUI:
                 path_list.append((current_node.data[0], current_node.data[1], current_node.point_identifier))
                 current_node = current_node.next
 
+            # Reverse the path list
+            path_list.reverse()
+
             # Draw Path
             self.draw_grid(matrix, path_list)
 
             # Output the path in a list and the total number of original points and agents needed after reduction
             original_points = len(path_list)
             agents_needed = sum(1 for point in path_list if point[2] == "agent")
-            self.path_label.config(text=f"Path: {path_list}")
+            self.path_text.delete("1.0", tk.END)
+            self.path_text.insert(tk.END, f"{path_list}")
             self.original_points_label.config(text=f"Total number of original points: {original_points}")
             self.agents_needed_label.config(text=f"Total number of agents needed after reduction: {agents_needed}")
 
@@ -121,6 +138,7 @@ class AgentReductionGUI:
                 fill_color = "white"
 
                 self.canvas.create_rectangle(x1, y1, x2, y2, fill=fill_color, outline="gray")
+                self.canvas.create_text(x1 + 5, y1 + 5, anchor=tk.NW, text=f"({r},{c})", font=("Arial", 8))
 
         # Draw the path
         for i in range(len(path) - 1):
