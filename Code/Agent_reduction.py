@@ -21,6 +21,7 @@ def read_path():
                 entryPoint[1] < 0 or entryPoint[1] >= cols or
                 matrixA[entryPoint[0]][entryPoint[1]] not in (-1, 1)):
             print("Invalid entry point:", entryPoint)
+            print("value: ", matrixA[entryPoint[0]][entryPoint[1]])
         else:
             print("Valid entry point:", entryPoint)
             entry_valid = True
@@ -33,6 +34,7 @@ def read_path():
                 exitPoint[1] < 0 or exitPoint[1] >= cols or
                 matrixA[exitPoint[0]][exitPoint[1]] not in (-1, 1)):
             print("Invalid exit point:", exitPoint)
+            print("value: ", matrixA[exitPoint[0]][exitPoint[1]])
         else:
             print("Valid exit point:", exitPoint)
             exit_valid = True
@@ -44,8 +46,7 @@ def print_matrix(matrixA):
     for row in matrixA:
         print(" ".join(map(str, row)))
 
-
-def search_path(matrixA, currentPoint, pathflag):
+def search_path(matrixA, currentPoint, pathflag, last_agent_point):
     print(f"Searching from {currentPoint} in direction {pathflag}")
     rows = len(matrixA)
     cols = len(matrixA[0])
@@ -60,7 +61,12 @@ def search_path(matrixA, currentPoint, pathflag):
             if matrixA[r][c] == 0:
                 matrixA[r][c] = 2
             elif matrixA[r][c] == 2:
-                add_agent = 1
+                # Check if the previous 2 is in the same section
+                if last_agent_point and (r, c) in last_agent_point:
+                    print("zigzag detecter at : ", (r, c))
+                    add_agent = 0
+                else:
+                    add_agent = 1
 
     if pathflag == 'r':
         for col in range(cols):
@@ -101,6 +107,43 @@ def search_path(matrixA, currentPoint, pathflag):
 
         return None, 'i', add_agent
 
+def compute_agent_reduction(matrix, entry, exit_):
+    print("\nRunning Agent Reduction Algorithm...")
+
+    pathflag = "i"
+    currentPoint = exit_
+    head = Node(currentPoint, "agent")
+    currentNode = head
+    visited_points = set()
+    visited_points.add(exit_)
+
+    path = {exit_, entry}
+    last_agent_point = None
+
+    while currentPoint != entry:
+        nextPoint, pathflag, add_agent = search_path(matrix, currentPoint, pathflag, last_agent_point)
+
+        if not nextPoint:
+            print("No more path found; stopping.")
+            break
+
+        path.add(nextPoint)
+
+        if add_agent == 1:
+            currentNode.point_identifier = "agent"
+            last_agent_point = nextPoint
+
+        if nextPoint == entry or add_agent == 1:
+            newNode = Node(nextPoint, "agent")
+        else:
+            newNode = Node(nextPoint, "path")
+
+        currentNode.next = newNode
+        currentNode = newNode
+        currentPoint = nextPoint
+        visited_points.add(nextPoint)
+
+    return path, head
 
 if __name__ == "__main__":
     matrixA, entryPoint, exitPoint = read_path()
@@ -109,31 +152,8 @@ if __name__ == "__main__":
     print(f"Entry point: {entryPoint} (Agent)")
     print(f"Exit point: {exitPoint} (Agent)")
 
-    # Initialize variables
-    pathflag = "i"
-    currentPoint = exitPoint
-    head = Node(currentPoint, "agent")  # Exit point is always an agent
-    currentNode = head
-
-    visited_points = set()
-    visited_points.add(exitPoint)
-
-    while currentPoint != entryPoint:
-        nextPoint, pathflag, add_agent = search_path(matrixA, currentPoint, pathflag)
-        if not nextPoint:
-            print("No more path found; stopping.")
-            break
-
-        # Mark entry point as an agent
-        if nextPoint == entryPoint:
-            newNode = Node(nextPoint, "agent")
-        else:
-            newNode = Node(nextPoint, "agent" if add_agent == 1 else "path")
-
-        currentNode.next = newNode
-        currentNode = newNode
-        currentPoint = nextPoint
-        visited_points.add(nextPoint)
+    # Compute the agent reduction path
+    path, head = compute_agent_reduction(matrixA, entryPoint, exitPoint)
 
     print("\nFinal matrix:")
     print_matrix(matrixA)
