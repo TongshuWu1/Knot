@@ -1,13 +1,13 @@
 import tkinter as tk
 from tkinter import messagebox, filedialog
+import os
 import Agent_reduction  # Make sure this has your updated code
 from pathNode import Node
-
 
 class AgentReductionGUI:
     def __init__(self, root):
         self.root = root
-        self.root.geometry("900x600")
+        self.root.geometry("800x1000")
         self.root.title("Agent Reduction - Path Optimization")
 
         # ============ 1) Main Scrollable Frame Setup ============
@@ -29,6 +29,9 @@ class AgentReductionGUI:
             lambda e: self.my_canvas.configure(scrollregion=self.my_canvas.bbox("all"))
         )
 
+        # Bind mouse wheel to scroll
+        self.my_canvas.bind_all("<MouseWheel>", self._on_mousewheel)
+
         # Frame inside the canvas (this is our "scrollable" frame)
         self.second_frame = tk.Frame(self.my_canvas)
         self.my_canvas.create_window((0, 0), window=self.second_frame, anchor="nw")
@@ -42,18 +45,40 @@ class AgentReductionGUI:
         )
         self.label_title.pack(pady=10, fill=tk.X)
 
+        # Matrix Name Input
+        self.matrix_name_label = tk.Label(self.second_frame, text="Matrix Name:")
+        self.matrix_name_label.pack()
+        self.matrix_name_entry = tk.Entry(self.second_frame, width=50)
+        self.matrix_name_entry.pack()
+
         # Matrix Input Text Area
         self.matrix_label = tk.Label(self.second_frame, text="Enter Matrix (comma separated):")
         self.matrix_label.pack()
 
-        self.matrix_text = tk.Text(self.second_frame, height=8, width=50)
-        self.matrix_text.pack()
+        self.matrix_frame = tk.Frame(self.second_frame)
+        self.matrix_frame.pack()
 
-        self.save_button = tk.Button(self.second_frame, text="Save Matrix", command=self.save_matrix)
+        self.matrix_text = tk.Text(self.matrix_frame, height=8, width=50)
+        self.matrix_text.pack(side=tk.LEFT)
+
+        self.button_frame = tk.Frame(self.matrix_frame)
+        self.button_frame.pack(side=tk.LEFT, padx=5)
+
+        self.save_button = tk.Button(self.button_frame, text="Save Matrix", command=self.save_matrix)
         self.save_button.pack(pady=5)
 
-        self.load_button = tk.Button(self.second_frame, text="Load Matrix", command=self.load_matrix)
+        self.load_button = tk.Button(self.button_frame, text="Load Matrix", command=self.load_matrix)
         self.load_button.pack(pady=5)
+
+        self.clear_button = tk.Button(self.button_frame, text="Clear", command=self.clear_all)
+        self.clear_button.pack(pady=5)
+
+        # Notes Input Text Area
+        self.notes_label = tk.Label(self.second_frame, text="Notes:")
+        self.notes_label.pack()
+
+        self.notes_text = tk.Text(self.second_frame, height=4, width=50)
+        self.notes_text.pack()
 
         # Frame for Entry and Exit Points
         self.entry_exit_frame = tk.Frame(self.second_frame)
@@ -98,25 +123,57 @@ class AgentReductionGUI:
         self.agents_needed_label = tk.Label(self.output_frame, text="Total number of agents needed after reduction: ")
         self.agents_needed_label.pack()
 
-    import os
+        # Label for crossing number
+        self.crossing_number_label = tk.Label(self.output_frame, text="Total number of crossings: ")
+        self.crossing_number_label.pack()
+
+    def _on_mousewheel(self, event):
+        self.my_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+
+    def clear_all(self):
+        self.matrix_name_entry.delete(0, tk.END)
+        self.matrix_text.delete("1.0", tk.END)
+        self.notes_text.delete("1.0", tk.END)
+        self.entry_point.delete(0, tk.END)
+        self.exit_point.delete(0, tk.END)
+        self.path_text.delete("1.0", tk.END)
+        self.original_points_label.config(text="Total number of original points: ")
+        self.agents_needed_label.config(text="Total number of agents needed after reduction: ")
+        self.crossing_number_label.config(text="Total number of crossings: ")
+        self.canvas.delete("all")
 
     def save_matrix(self):
         try:
+            matrix_name = self.matrix_name_entry.get().strip()
+            if not matrix_name:
+                messagebox.showerror("Error", "Matrix name is empty")
+                return
+
             matrix_str = self.matrix_text.get("1.0", tk.END).strip()
             if not matrix_str:
                 messagebox.showerror("Error", "Matrix is empty")
                 return
 
+            notes_str = self.notes_text.get("1.0", tk.END).strip()
+
             entry = self.entry_point.get().strip() or "None"
             exit_ = self.exit_point.get().strip() or "None"
 
-            file_name = filedialog.asksaveasfilename(initialdir='matrixes', defaultextension=".txt",
+            file_name = filedialog.asksaveasfilename(initialdir='matrixes', initialfile=matrix_name, defaultextension=".txt",
                                                      filetypes=[("Text files", "*.txt")])
             if file_name:
+                if os.path.exists(file_name):
+                    replace = messagebox.askyesno("Replace File", "File already exists. Do you want to replace it?")
+                    if not replace:
+                        return
+
                 with open(file_name, 'w') as file:
                     file.write(f"Entry: {entry}\n")
                     file.write(f"Exit: {exit_}\n")
+                    file.write(f"Notes: {notes_str}\n")
                     file.write(matrix_str)
+                self.matrix_name_entry.delete(0, tk.END)
+                self.matrix_name_entry.insert(0, file_name.split('/')[-1].split('.')[0])
                 messagebox.showinfo("Success", "Matrix saved successfully")
         except Exception as e:
             messagebox.showerror("Error", f"Failed to save matrix: {e}")
@@ -129,18 +186,22 @@ class AgentReductionGUI:
                     lines = file.readlines()
                     entry = lines[0].strip().split(": ")[1]
                     exit_ = lines[1].strip().split(": ")[1]
-                    matrix_str = "".join(lines[2:])
+                    notes = lines[2].strip().split(": ")[1] if len(lines) > 2 else ""
+                    matrix_str = "".join(lines[3:])
 
                 self.matrix_text.delete("1.0", tk.END)
                 self.matrix_text.insert(tk.END, matrix_str)
+                self.notes_text.delete("1.0", tk.END)
+                self.notes_text.insert(tk.END, notes)
                 self.entry_point.delete(0, tk.END)
                 self.entry_point.insert(0, entry)
                 self.exit_point.delete(0, tk.END)
                 self.exit_point.insert(0, exit_)
+                self.matrix_name_entry.delete(0, tk.END)
+                self.matrix_name_entry.insert(0, file_path.split('/')[-1].split('.')[0])
                 messagebox.showinfo("Success", "Matrix loaded successfully")
         except Exception as e:
             messagebox.showerror("Error", f"Failed to load matrix: {e}")
-
 
     def run_algorithm(self):
         """
@@ -178,7 +239,7 @@ class AgentReductionGUI:
                 return
 
             # Run the actual (updated) agent reduction algorithm
-            path, head = Agent_reduction.compute_agent_reduction(matrix, entry, exit_)
+            path, head, crossNumber = Agent_reduction.compute_agent_reduction(matrix, entry, exit_)
 
             # Convert linked list to a list of (row, col, 'agent' or 'path')
             path_list = []
@@ -205,6 +266,7 @@ class AgentReductionGUI:
 
             self.original_points_label.config(text=f"Total number of original points: {original_points}")
             self.agents_needed_label.config(text=f"Total number of agents needed after reduction: {agents_needed}")
+            self.crossing_number_label.config(text=f"Total number of crossings: {crossNumber}")
 
         except Exception as e:
             messagebox.showerror("Error", f"Invalid input: {e}")

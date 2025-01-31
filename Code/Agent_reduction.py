@@ -53,12 +53,7 @@ def print_matrix(matrixA):
     for row in matrixA:
         print(" ".join(map(str, row)))
 
-def search_path(matrixA, currentPoint, pathflag, last_agent_point, pathindex, previousCrossIndex):
-    """
-    Searches for the next path point in either row (r) or column (c), or both (i).
-    Returns:
-      nextPoint, newPathFlag, add_agent, pathindex, previousCrossIndex
-    """
+def search_path(matrixA, currentPoint, pathflag, last_agent_point, pathindex, previousCrossIndex, crossNumber):
     print(f"Searching from {currentPoint} in direction {pathflag}")
     rows = len(matrixA)
     cols = len(matrixA[0])
@@ -67,38 +62,33 @@ def search_path(matrixA, currentPoint, pathflag, last_agent_point, pathindex, pr
     add_agent = 0
     nextPoint = None
 
-    def walk_cells(cells, pathindex, previousCrossIndex):
+    def walk_cells(cells, pathindex, previousCrossIndex, crossNumber):
         nonlocal add_agent
         print("previousCrossIndex:", previousCrossIndex)
         for (r, c) in cells:
-            # If it's a blank path cell, mark it with the current pathindex
             if matrixA[r][c] == 0:
                 matrixA[r][c] = pathindex
-
-            # If we detect a "zigzag" or crossing
             elif matrixA[r][c] == previousCrossIndex:
                 print(f"Zigzag detected at {(r, c)}")
+                crossNumber += 1
                 add_agent = 0
-
-            elif (matrixA[r][c] not in (0, 1, -1)
-                  and matrixA[r][c] != previousCrossIndex):
-                # Found a crossing to another path
+            elif (matrixA[r][c] not in (0, 1, -1) and matrixA[r][c] != previousCrossIndex):
                 add_agent = 1
+                crossNumber += 1
                 previousCrossIndex = matrixA[r][c]
-                print(f"Crossing {previousCrossIndex} at {(r, c)}. Updating previousCrossIndex to {previousCrossIndex}")
+                print(f"Crossing {previousCrossIndex} at {(r, c)}. Updating previousCrossIndex to {previousCrossIndex}. crossing: {crossNumber}")
 
-        return pathindex, add_agent, previousCrossIndex
+        return pathindex, add_agent, previousCrossIndex, crossNumber
 
-    # Based on the direction flag, search row-wise or column-wise
     if pathflag == 'r':
         for col in range(cols):
             if col != col0 and matrixA[row0][col] in (1, -1):
                 nextPoint = (row0, col)
                 step = 1 if col > col0 else -1
                 path_cells = [(row0, c) for c in range(col0, col + step, step)]
-                pathindex, add_agent, previousCrossIndex = walk_cells(path_cells, pathindex, previousCrossIndex)
-                return nextPoint, 'c', add_agent, pathindex, previousCrossIndex
-        return None, 'r', add_agent, pathindex, previousCrossIndex
+                pathindex, add_agent, previousCrossIndex, crossNumber = walk_cells(path_cells, pathindex, previousCrossIndex, crossNumber)
+                return nextPoint, 'c', add_agent, pathindex, previousCrossIndex, crossNumber
+        return None, 'r', add_agent, pathindex, previousCrossIndex, crossNumber
 
     elif pathflag == 'c':
         for row in range(rows):
@@ -106,32 +96,28 @@ def search_path(matrixA, currentPoint, pathflag, last_agent_point, pathindex, pr
                 nextPoint = (row, col0)
                 step = 1 if row > row0 else -1
                 path_cells = [(r, col0) for r in range(row0, row + step, step)]
-                pathindex, add_agent, previousCrossIndex = walk_cells(path_cells, pathindex, previousCrossIndex)
-                return nextPoint, 'r', add_agent, pathindex, previousCrossIndex
-        return None, 'c', add_agent, pathindex, previousCrossIndex
+                pathindex, add_agent, previousCrossIndex, crossNumber = walk_cells(path_cells, pathindex, previousCrossIndex, crossNumber)
+                return nextPoint, 'r', add_agent, pathindex, previousCrossIndex, crossNumber
+        return None, 'c', add_agent, pathindex, previousCrossIndex, crossNumber
 
     else:
-        # Initial direction "i" => Try row first, then column
-        # 1) Try moving horizontally first
         for col in range(cols):
             if col != col0 and matrixA[row0][col] in (1, -1):
                 nextPoint = (row0, col)
                 step = 1 if col > col0 else -1
                 path_cells = [(row0, c) for c in range(col0, col + step, step)]
-                pathindex, add_agent, previousCrossIndex = walk_cells(path_cells, pathindex, previousCrossIndex)
-                return nextPoint, 'c', add_agent, pathindex, previousCrossIndex
+                pathindex, add_agent, previousCrossIndex, crossNumber = walk_cells(path_cells, pathindex, previousCrossIndex, crossNumber)
+                return nextPoint, 'c', add_agent, pathindex, previousCrossIndex, crossNumber
 
-        # 2) Then try moving vertically
         for row in range(rows):
             if row != row0 and matrixA[row][col0] in (1, -1):
                 nextPoint = (row, col0)
                 step = 1 if row > row0 else -1
                 path_cells = [(r, col0) for r in range(row0, row + step, step)]
-                pathindex, add_agent, previousCrossIndex = walk_cells(path_cells, pathindex, previousCrossIndex)
-                return nextPoint, 'r', add_agent, pathindex, previousCrossIndex
+                pathindex, add_agent, previousCrossIndex, crossNumber = walk_cells(path_cells, pathindex, previousCrossIndex, crossNumber)
+                return nextPoint, 'r', add_agent, pathindex, previousCrossIndex, crossNumber
 
-        # If no path found, return None
-        return None, 'i', add_agent, pathindex, previousCrossIndex
+        return None, 'i', add_agent, pathindex, previousCrossIndex, crossNumber
 
 def compute_agent_reduction(matrix, entry, exit_):
     print("\nRunning Agent Reduction Algorithm...")
@@ -149,13 +135,16 @@ def compute_agent_reduction(matrix, entry, exit_):
     pathindex = 2
     previousCrossIndex = -2
 
+    crossNumber = 0
+
     while currentPoint != entry:
         print(f"\nCurrentPoint: {currentPoint}, pathflag: {pathflag}, pathindex: {pathindex}")
-        nextPoint, pathflag, add_agent, pathindex, previousCrossIndex = search_path(
+        nextPoint, pathflag, add_agent, pathindex, previousCrossIndex, crossNumber = search_path(
             matrix, currentPoint, pathflag,
             last_agent_point=None,  # or keep track if needed
             pathindex=pathindex,
-            previousCrossIndex=previousCrossIndex
+            previousCrossIndex=previousCrossIndex,
+            crossNumber=crossNumber
         )
 
         if not nextPoint:
@@ -182,7 +171,7 @@ def compute_agent_reduction(matrix, entry, exit_):
         path_list.append(nextPoint)
 
     # Return BOTH the path_list (for the GUI) and the head of the linked list
-    return path_list, head
+    return path_list, head, crossNumber
 
 
 
@@ -194,7 +183,7 @@ if __name__ == "__main__":
     print(f"Exit point: {exitPoint} (Agent)")
 
     # Compute the agent reduction path
-    path, head = compute_agent_reduction(matrixA, entryPoint, exitPoint)
+    path, head, crossNumber = compute_agent_reduction(matrixA, entryPoint, exitPoint)
 
     print("\nFinal matrix:")
     print_matrix(matrixA)
@@ -208,3 +197,5 @@ if __name__ == "__main__":
     # For debugging, show the collected path list
     print("\nPath List (from exit -> entry):")
     print(path)
+
+    print("\nCrossings:", crossNumber)
