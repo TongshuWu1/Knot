@@ -184,6 +184,8 @@ def compute_agent_reduction(matrix, entry, exit_):
     # Return BOTH the path_list (for the GUI) and the head of the linked list
     return path_list, head
 
+
+
 if __name__ == "__main__":
     matrixA, entryPoint, exitPoint = read_path()
     print("\nInitial matrix:")
