@@ -112,6 +112,12 @@ class AgentReductionGUI:
         self.path_title_label = tk.Label(self.output_frame, text="Path from Entry to Exit:")
         self.path_title_label.pack()
 
+        # Checkbox for toggling matrix overlay
+        self.show_matrix_overlay = tk.BooleanVar()
+        self.matrix_overlay_checkbox = tk.Checkbutton(self.second_frame, text="Show Matrix Overlay",
+                                                      variable=self.show_matrix_overlay, command=self.run_algorithm)
+        self.matrix_overlay_checkbox.pack(pady=5)
+
         # Path Text Area
         self.path_text = tk.Text(self.output_frame, height=20, width=40)
         self.path_text.pack(fill=tk.BOTH, expand=True)
@@ -291,8 +297,11 @@ class AgentReductionGUI:
                 x2, y2 = (c + 1) * cell_size, (r + 1) * cell_size
 
                 self.canvas.create_rectangle(x1, y1, x2, y2, fill="white", outline="gray")
-                self.canvas.create_text(x1 + 5, y1 + 5, anchor=tk.NW,
-                                        text=f"({r},{c})", font=("Arial", 8))
+                self.canvas.create_text(x1 + 5, y1 + 5, anchor=tk.NW, text=f"({r},{c})", font=("Arial", 8))
+
+                if self.show_matrix_overlay.get():
+                    self.canvas.create_text(x1 + cell_size // 2, y1 + cell_size // 2, text=f"{matrix[r][c]}",
+                                            font=("Arial", 16), fill="black", tags="overlay")
 
         # Draw the path
         for i in range(len(path) - 1):
@@ -307,6 +316,10 @@ class AgentReductionGUI:
             if t1 == "agent":
                 radius = 3
                 self.canvas.create_oval(x1 - radius, y1 - radius, x1 + radius, y1 + radius, fill="blue")
+
+        # Bring overlay text to front
+        if self.show_matrix_overlay.get():
+            self.canvas.tag_raise("overlay")
 
 
 # ============ Run GUI ============
